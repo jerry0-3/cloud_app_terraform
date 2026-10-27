@@ -1,0 +1,25 @@
+# 1. Logowanie Dockera do Twojego prywatnego ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 857233992679.dkr.ecr.us-east-1.amazonaws.com
+
+# 2. Zbudowanie, otagowanie i wypchnięcie Backendu
+docker build --platform linux/amd64 -t project1-backend ./backend
+docker tag project1-backend:latest 857233992679.dkr.ecr.us-east-1.amazonaws.com/project1-backend:latest
+docker push 857233992679.dkr.ecr.us-east-1.amazonaws.com/project1-backend:latest
+
+# 3. Zbudowanie, otagowanie i wypchnięcie Frontendu
+docker build --platform linux/amd64 -t project1-frontend ./frontend
+docker tag project1-frontend:latest 857233992679.dkr.ecr.us-east-1.amazonaws.com/project1-frontend:latest
+docker push 857233992679.dkr.ecr.us-east-1.amazonaws.com/project1-frontend:latest
+
+# 4. Wymuszenie pobrania świeżo wrzuconych obrazów przez ECS Fargate
+aws ecs update-service --cluster project1-cluster --service project1-backend-svc  --force-new-deployment --region us-east-1
+aws ecs update-service --cluster project1-cluster --service project1-frontend-svc --force-new-deployment --region us-east-1
+
+# 5. Potwierdzenie działania lambdy
+aws s3 ls s3://project1-media-2bf950ad/metadata/ --region us-east-1
+aws logs tail /aws/lambda/project1-media-processor --since 10m --region us-east-1
+
+# 6. Cognito
+aws cognito-idp list-user-pools --max-results 5 --region us-east-1 --query "UserPools[?starts_with(Name, 'project1')].Id" --output text
+aws cognito-idp admin-create-user --user-pool-id "TUTAJ_WKLEJ_USER_POOL_ID" --username "test@example.com" --message-action SUPPRESS --region us-east-1
+aws cognito-idp admin-set-user-password --user-pool-id "TUTAJ_WKLEJ_USER_POOL_ID" --username "test@example.com" --password "AWSaws123" --permanent --region us-east-1

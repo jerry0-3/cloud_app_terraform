@@ -1,0 +1,54 @@
+# ==============================================================================
+# TERRAFORM
+# ==============================================================================
+# Lokalne katalogi konfiguracyjne i pamięć podręczna modułów/providerów
+**/.terraform/
+.terraform/
+
+# Lokalne pliki stanu (zawierają sekrety i wrażliwe dane infrastruktury!)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Wygenerowane pliki planu wykonania (mogą zawierać hasła w czystym tekście)
+*.tfplan
+*.tfplan.binary
+
+# Pliki nadpisywania konfiguracji (override)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Narzędzia dodatkowe (crash logi, tflint, terrascan itp.)
+crash.log
+crash.*.log
+.tflint.d/
+
+
+# ==============================================================================
+# INTELLIJ IDEA / JETBRAINS
+# ==============================================================================
+# Cały katalog konfiguracyjny IDE
+.idea/
+
+# Pliki modułów i sesji JetBrains
+*.iml
+*.iws
+*.ipr
+out/
+
+
+# ==============================================================================
+# PLIKI SYSTEMOWE I ŚRODOWISKOWE
+# ==============================================================================
+# Lokalne pliki zmiennych środowiskowych i klucze prywatne
+.env
+.env.*
+*.pem
+*.key
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
