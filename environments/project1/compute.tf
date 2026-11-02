@@ -20,5 +20,6 @@ module "compute" {
   db_password        = var.db_password
   s3_bucket_name     = module.storage.s3_bucket_name
   cognito_issuer_uri = module.auth.issuer_uri
+  cognito_client_id  = module.auth.client_id
   auth_enabled       = var.auth_enabled
 }

@@ -13,4 +13,5 @@ module "auth" {
   source       = "../../modules/auth"
   project_name = var.project_name
   aws_region   = var.aws_region
+  lab_role_arn = data.aws_iam_role.lab_role.arn
 }

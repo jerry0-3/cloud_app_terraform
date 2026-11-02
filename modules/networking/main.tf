@@ -55,8 +55,15 @@ resource "aws_route_table_association" "public_2" {
 # Security Group dla Load Balancera (port 80 Frontend, port 8080 Backend)
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
-  description = "Allow HTTP 80 and 8080 to ALB"
+  description = "Allow HTTPS 443, HTTP 80 and 8080 to ALB"
   vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   ingress {
     from_port   = 80

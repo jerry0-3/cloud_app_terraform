@@ -1,10 +1,10 @@
 output "frontend_application_url" {
-  description = "Adres URL aplikacji Frontend"
+  description = "Adres HTTPS aplikacji Frontend"
   value       = module.compute.frontend_url
 }
 
 output "backend_api_url" {
-  description = "Adres URL API Backend (automatycznie przekazany do Frontend)"
+  description = "Adres HTTPS API Backend"
   value       = module.compute.backend_url
 }
 
@@ -18,9 +18,4 @@ output "ecr_frontend_repository" {
 
 output "s3_media_bucket" {
   value = module.storage.s3_bucket_name
-}
-
-output "cognito_hosted_ui_url" {
-  description = "Link do logowania/rejestracji w AWS Cognito"
-  value       = module.auth.hosted_ui_login_url
 }

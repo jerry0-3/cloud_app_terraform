@@ -16,7 +16,7 @@ aws ecs update-service --cluster project1-cluster --service project1-backend-svc
 aws ecs update-service --cluster project1-cluster --service project1-frontend-svc --force-new-deployment --region us-east-1
 
 # 5. Potwierdzenie działania lambdy
-aws s3 ls s3://project1-media-2bf950ad/metadata/ --region us-east-1
+aws s3 ls s3://project1-media-6fb55677/metadata/ --region us-east-1
 aws logs tail /aws/lambda/project1-media-processor --since 10m --region us-east-1
 
 # 6. Cognito
