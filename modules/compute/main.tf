@@ -20,7 +20,7 @@ resource "aws_cloudwatch_log_group" "frontend" {
   retention_in_days = 7
 }
 
-# 3. Application Load Balancer (port 80 -> Frontend, port 8080 -> Backend)
+# 3. Application Load Balancer
 resource "aws_lb" "main" {
   name               = "${var.project_name}-alb"
   internal           = false
@@ -29,6 +29,36 @@ resource "aws_lb" "main" {
   subnets            = var.subnet_ids
 }
 
+# 4. Certyfikat SSL/TLS zarejestrowany w AWS Certificate Manager (ACM) dla domeny ALB
+resource "tls_private_key" "alb_key" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "alb_cert" {
+  private_key_pem = tls_private_key.alb_key.private_key_pem
+
+  subject {
+    common_name  = aws_lb.main.dns_name
+    organization = "CloudApp LearnerLab"
+  }
+
+  dns_names             = [aws_lb.main.dns_name]
+  validity_period_hours = 720
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+  ]
+}
+
+resource "aws_acm_certificate" "alb" {
+  private_key      = tls_private_key.alb_key.private_key_pem
+  certificate_body = tls_self_signed_cert.alb_cert.cert_pem
+}
+
+# 5. Target Groups
 resource "aws_lb_target_group" "frontend" {
   name        = "${var.project_name}-fe-tg"
   port        = 80
@@ -58,14 +88,49 @@ resource "aws_lb_target_group" "backend" {
   }
 }
 
-resource "aws_lb_listener" "frontend" {
+# 6. Listenery ALB (HTTPS 443 z certyfikatem ACM + przekierowanie HTTP 80 -> HTTPS 443)
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate.alb.arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+}
+
+# Kierowanie zapytań /api/* po HTTPS do osobnej usługi Backend Fargate
+resource "aws_lb_listener_rule" "api_routing" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 10
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*"]
+    }
+  }
+}
+
+resource "aws_lb_listener" "http_redirect" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 }
 
@@ -80,7 +145,7 @@ resource "aws_lb_listener" "backend" {
   }
 }
 
-# 4. Klaster ECS oraz definicje zadań Fargate
+# 7. Klaster ECS oraz definicje zadań Fargate
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 }
@@ -143,7 +208,10 @@ resource "aws_ecs_task_definition" "frontend" {
       ]
       # Automatyczne wstrzykniecie adresu Backend do kontenera Frontend!
       environment = [
-        { name = "BACKEND_URL", value = "http://${aws_lb.main.dns_name}:8080" }
+        { name = "BACKEND_URL", value = "https://${aws_lb.main.dns_name}" },
+        { name = "AUTH_ENABLED", value = tostring(var.auth_enabled) },
+        { name = "COGNITO_REGION", value = var.aws_region },
+        { name = "COGNITO_CLIENT_ID", value = var.cognito_client_id }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -157,7 +225,7 @@ resource "aws_ecs_task_definition" "frontend" {
   ])
 }
 
-# 5. Dwie niezależne usługi AWS Fargate (Backend i Frontend na osobnych instancjach)
+# 8. Dwie niezależne usługi AWS Fargate (Backend i Frontend na osobnych instancjach)
 resource "aws_ecs_service" "backend" {
   name            = "${var.project_name}-backend-svc"
   cluster         = aws_ecs_cluster.main.id
@@ -199,5 +267,5 @@ resource "aws_ecs_service" "frontend" {
     container_port   = 80
   }
 
-  depends_on = [aws_lb_listener.frontend]
+  depends_on = [aws_lb_listener.https]
 }

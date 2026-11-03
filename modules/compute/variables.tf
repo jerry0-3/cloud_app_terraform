@@ -14,7 +14,8 @@ variable "db_password" {
 }
 variable "s3_bucket_name" { type = string }
 variable "cognito_issuer_uri" { type = string }
+variable "cognito_client_id" { type = string }
 variable "auth_enabled" {
   type    = bool
-  default = false
+  default = true
 }
