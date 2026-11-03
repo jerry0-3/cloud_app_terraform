@@ -1,3 +1,6 @@
+# 0. Lokalny deploy
+docker compose up --build
+
 # 1. Logowanie Dockera do Twojego prywatnego ECR
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 857233992679.dkr.ecr.us-east-1.amazonaws.com
 
